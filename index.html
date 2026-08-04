@@ -569,7 +569,7 @@ const todayStr = () => new Date().toISOString().slice(0,10);
 
 async function loadState(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
+    const res = await window.storage.get(STORAGE_KEY, true);
     if(res && res.value){
       state = JSON.parse(res.value);
       if(!state.transactions) state.transactions = [];
@@ -595,7 +595,7 @@ const stateReadyPromise = loadState();
 
 async function saveState(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+    await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
   }catch(e){
     console.error("Erro ao salvar:", e);
   }
