@@ -569,7 +569,20 @@ const todayStr = () => new Date().toISOString().slice(0,10);
 
 async function loadState(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, true);
+    let res = await window.storage.get(STORAGE_KEY, true);
+
+    if(!res || !res.value){
+      // Nada no espaço compartilhado ainda — tenta recuperar dados antigos
+      // que ficaram salvos no espaço pessoal (versão anterior do app) e migra.
+      try{
+        const oldRes = await window.storage.get(STORAGE_KEY, false);
+        if(oldRes && oldRes.value){
+          res = oldRes;
+          await window.storage.set(STORAGE_KEY, oldRes.value, true);
+        }
+      }catch(e){ /* sem dados antigos, segue normal */ }
+    }
+
     if(res && res.value){
       state = JSON.parse(res.value);
       if(!state.transactions) state.transactions = [];
@@ -579,8 +592,8 @@ async function loadState(){
       if(!state.activityLog || !Array.isArray(state.activityLog)) state.activityLog = [];
       if(!state.users || !Array.isArray(state.users) || state.users.length===0){
         state.users = JSON.parse(JSON.stringify(DEFAULT_USERS));
-        await saveState();
       }
+      await saveState();
     }else{
       await saveState();
     }
