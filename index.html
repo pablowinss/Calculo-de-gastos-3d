@@ -99,6 +99,8 @@
   }
   .init-balance button:hover{border-color:var(--accent);}
   .init-hint{font-size:10.5px;color:var(--muted);margin:6px 0 0;max-width:220px;line-height:1.4;}
+  .backup-hint.ok{color:var(--income);}
+  .backup-hint.warn{color:var(--accent);}
   .quick-add-btn{
     margin-top:14px;background:var(--income-soft);border:1px solid var(--income);color:var(--income);
     border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;
@@ -236,6 +238,14 @@
     border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
   }
   .activity-filters button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+  .type-filters{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .type-filters button{
+    font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;
+    border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
+  }
+  .type-filters button.active[data-type-filter="all"]{background:var(--panel-2);border-color:var(--text);color:var(--text);}
+  .type-filters button.active[data-type-filter="expense"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+  .type-filters button.active[data-type-filter="income"]{background:var(--income-soft);border-color:var(--income);color:var(--income);}
 
   /* ---------- category chart ---------- */
   .category-chart{display:flex;flex-direction:column;gap:12px;}
@@ -264,6 +274,20 @@
   .month-figures{display:flex;justify-content:space-between;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--muted);}
   .month-figures .in{color:var(--income);}
   .month-figures .out{color:var(--accent);}
+  .month-cats{margin-top:10px;}
+  .month-cats summary{
+    font-size:11.5px;color:var(--muted);cursor:pointer;list-style:none;
+    display:flex;align-items:center;gap:5px;
+  }
+  .month-cats summary::-webkit-details-marker{display:none;}
+  .month-cats summary::before{content:"▸";font-size:9px;}
+  .month-cats[open] summary::before{content:"▾";}
+  .month-cats summary:hover{color:var(--text);}
+  .month-cats-list{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
+  .month-cat-row{display:flex;justify-content:space-between;font-size:11.5px;}
+  .month-cat-name{color:var(--text);}
+  .month-cat-val{font-family:'JetBrains Mono',monospace;color:var(--accent);}
+  .month-cat-pct{color:var(--muted);}
 
   .section-title{
     font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;
@@ -318,6 +342,32 @@
     font-size:12px;color:var(--muted);cursor:pointer;
   }
   .remember-row input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;}
+
+  /* ---------- toast ---------- */
+  .toast-container{
+    position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    z-index:500;display:flex;flex-direction:column;gap:8px;align-items:center;
+    width:100%;max-width:420px;padding:0 16px;pointer-events:none;
+  }
+  .toast{
+    pointer-events:auto;
+    display:flex;align-items:center;gap:10px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,0.4);
+    animation:toast-in .2s ease-out;width:100%;
+  }
+  .toast.error{border-color:var(--danger);}
+  .toast.success{border-color:var(--income);}
+  .toast .toast-icon{flex-shrink:0;font-weight:700;}
+  .toast.error .toast-icon{color:var(--danger);}
+  .toast.success .toast-icon{color:var(--income);}
+  .toast .toast-msg{flex:1;color:var(--text);}
+  .toast .toast-retry{
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    border-radius:6px;padding:5px 9px;font-size:11.5px;cursor:pointer;flex-shrink:0;
+  }
+  .toast .toast-retry:hover{border-color:var(--accent);}
+  @keyframes toast-in{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
   .login-btn{
     width:100%;padding:11px;border-radius:9px;border:none;margin-top:6px;
     background:var(--accent);color:#1a1c22;font-weight:700;font-size:13px;cursor:pointer;
@@ -362,6 +412,8 @@
 </style>
 </head>
 <body>
+
+<div id="toastContainer" class="toast-container"></div>
 
 <div id="loginScreen">
   <div class="login-card">
@@ -469,6 +521,7 @@
     </div>
     <div class="user-box">
       <span id="userBadge">—</span>
+      <button id="undoBtn" class="clear">↩ Desfazer</button>
       <button id="changePassBtn" class="clear">Trocar senha</button>
       <button id="resetOtherBtn" class="clear">Redefinir senha do outro</button>
       <button id="logoutBtn" class="clear">Sair</button>
@@ -505,6 +558,7 @@
     <div>
       <p class="section-title" style="margin:0;">Backup</p>
       <p class="sub" style="margin:2px 0 0;">Guarde uma cópia de segurança de vez em quando.</p>
+      <p class="sub backup-hint" id="backupHint" style="margin:4px 0 0;">Você ainda não baixou nenhum backup.</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="clear" id="downloadBackupBtn">Baixar backup (.json)</button>
@@ -584,6 +638,11 @@
     <p class="section-title">Histórico <span class="tag" id="historyCount">0 lançamentos</span>
       <button class="clear" id="exportCsvBtn" style="margin-left:auto;">Exportar CSV</button>
     </p>
+    <div class="type-filters" id="typeFilters">
+      <button data-type-filter="all" class="active">Todos</button>
+      <button data-type-filter="expense">Só gastos</button>
+      <button data-type-filter="income">Só receitas</button>
+    </div>
     <div class="filters">
       <div class="field">
         <label>De</label>
@@ -616,6 +675,7 @@ const DEFAULT_USERS = [
 ];
 
 let currentUser = null;
+let undoStack = []; // ações reversíveis desta sessão, mais recente por último
 
 const REMEMBER_KEY = "remembered-login-3d";
 
@@ -680,6 +740,67 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
   document.getElementById('loginUser').value = "";
   document.getElementById('loginError').textContent = "";
 });
+
+async function undoLast(){
+  const entry = undoStack.pop();
+  if(!entry){
+    showToast("Não há nada pra desfazer nesta sessão.", 'error');
+    return;
+  }
+
+  switch(entry.type){
+    case 'add-tx': {
+      const idx = state.transactions.findIndex(t => t.id === entry.txId);
+      if(idx > -1){
+        const [tx] = state.transactions.splice(idx, 1);
+        logEvent(`desfez o lançamento: ${tx.description} (${fmt(tx.amount)})`, tx.type);
+      }
+      break;
+    }
+    case 'edit-tx': {
+      const tx = state.transactions.find(t => t.id === entry.txId);
+      if(tx){
+        Object.assign(tx, entry.before);
+        logEvent(`desfez a edição de: ${tx.description}`, tx.type);
+      }
+      break;
+    }
+    case 'soft-delete': {
+      const idx = state.deletedTransactions.findIndex(t => t.id === entry.txId);
+      if(idx > -1){
+        const [tx] = state.deletedTransactions.splice(idx, 1);
+        delete tx.deletedBy;
+        delete tx.deletedAt;
+        state.transactions.push(tx);
+        logEvent(`desfez a exclusão de: ${tx.description} (${fmt(tx.amount)})`, 'trash');
+      }
+      break;
+    }
+    case 'restore': {
+      const idx = state.transactions.findIndex(t => t.id === entry.txId);
+      if(idx > -1){
+        const tx = state.transactions[idx];
+        state.transactions.splice(idx, 1);
+        tx.deletedBy = currentUser.username;
+        tx.deletedAt = todayStr();
+        state.deletedTransactions.push(tx);
+        logEvent(`desfez a restauração de: ${tx.description} (${fmt(tx.amount)})`, 'trash');
+      }
+      break;
+    }
+    case 'init-balance': {
+      state.initialBalance = entry.prevValue;
+      document.getElementById('initInput').value = state.initialBalance || "";
+      logEvent(`desfez a alteração do saldo inicial`, 'system');
+      break;
+    }
+  }
+
+  await saveState();
+  renderAll();
+  showToast('Última ação desfeita.', 'success');
+}
+document.getElementById('undoBtn').addEventListener('click', undoLast);
 
 function openChangePass(){
   document.getElementById('cpOld').value = "";
@@ -792,11 +913,39 @@ async function loadState(){
 }
 const stateReadyPromise = loadState();
 
+function showToast(message, type, opts){
+  opts = opts || {};
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type || 'success'}`;
+  el.innerHTML = `
+    <span class="toast-icon">${type==='error' ? '⚠' : '✓'}</span>
+    <span class="toast-msg">${escapeHtml(message)}</span>
+    ${opts.retry ? '<button class="toast-retry">Tentar de novo</button>' : ''}
+  `;
+  if(opts.retry){
+    el.querySelector('.toast-retry').addEventListener('click', async ()=>{
+      el.remove();
+      await opts.retry();
+    });
+  }
+  container.appendChild(el);
+  const life = opts.retry ? 8000 : 3200;
+  setTimeout(()=> el.remove(), life);
+}
+
 async function saveState(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+    const result = await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+    if(!result){
+      showToast("Não foi possível salvar. Suas últimas alterações podem não ter sido guardadas.", 'error', { retry: saveState });
+      return false;
+    }
+    return true;
   }catch(e){
     console.error("Erro ao salvar:", e);
+    showToast("Não foi possível salvar agora. Tente novamente em instantes.", 'error', { retry: saveState });
+    return false;
   }
 }
 
@@ -861,8 +1010,10 @@ document.getElementById('quickAddIncomeBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('saveInitBtn').addEventListener('click', async ()=>{
+  const prevValue = state.initialBalance;
   const val = parseFloat(document.getElementById('initInput').value) || 0;
   state.initialBalance = val;
+  undoStack.push({type:'init-balance', prevValue});
   logEvent(`definiu o saldo inicial em ${fmt(val)}`, 'system');
   await saveState();
   renderAll();
@@ -887,6 +1038,7 @@ document.getElementById('addBtn').addEventListener('click', async ()=>{
     createdBy: currentUser.username
   };
   state.transactions.push(tx);
+  undoStack.push({type:'add-tx', txId: tx.id});
   logEvent(`${currentType==='expense'?'registrou um gasto':'registrou uma receita'}: ${desc} (${fmt(amount)})`, currentType);
   await saveState();
 
@@ -950,6 +1102,7 @@ document.getElementById('editConfirm').addEventListener('click', async ()=>{
   if(!date){ errEl.textContent = "Informe uma data."; return; }
 
   const before = `${tx.type==='expense'?'gasto':'receita'} "${tx.description}" (${fmt(tx.amount)}, ${formatDateLabel(tx.date)})`;
+  const snapshot = { type: tx.type, description: tx.description, amount: tx.amount, date: tx.date, category: tx.category };
   tx.type = editingType;
   tx.description = desc;
   tx.amount = amount;
@@ -957,6 +1110,7 @@ document.getElementById('editConfirm').addEventListener('click', async ()=>{
   tx.category = category;
   const after = `${tx.type==='expense'?'gasto':'receita'} "${tx.description}" (${fmt(tx.amount)}, ${formatDateLabel(tx.date)})`;
 
+  undoStack.push({type:'edit-tx', txId: tx.id, before: snapshot});
   logEvent(`editou um lançamento: ${before} → ${after}`, tx.type);
   await saveState();
   closeEditModal();
@@ -998,7 +1152,7 @@ function exportCSV(){
 document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
 
 // ---------- Backup completo (JSON) ----------
-function downloadBackup(){
+async function downloadBackup(){
   const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1008,8 +1162,29 @@ function downloadBackup(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+
+  state.lastBackupAt = new Date().toISOString();
+  await saveState();
+  renderBackupHint();
 }
 document.getElementById('downloadBackupBtn').addEventListener('click', downloadBackup);
+
+function renderBackupHint(){
+  const el = document.getElementById('backupHint');
+  if(!state.lastBackupAt){
+    el.textContent = "Você ainda não baixou nenhum backup.";
+    el.className = 'sub backup-hint warn';
+    return;
+  }
+  const days = Math.floor((Date.now() - new Date(state.lastBackupAt).getTime()) / 86400000);
+  if(days <= 0){
+    el.textContent = "Último backup: hoje.";
+    el.className = 'sub backup-hint ok';
+  }else{
+    el.textContent = `Último backup: há ${days} dia${days===1?'':'s'}.`;
+    el.className = 'sub backup-hint' + (days >= 7 ? ' warn' : ' ok');
+  }
+}
 
 document.getElementById('restoreBackupBtn').addEventListener('click', ()=>{
   document.getElementById('restoreBackupInput').click();
@@ -1058,10 +1233,15 @@ function otherUserDisplay(username){
 async function softDelete(txId){
   const idx = state.transactions.findIndex(t => t.id === txId);
   if(idx === -1) return;
-  const [tx] = state.transactions.splice(idx, 1);
+  const tx = state.transactions[idx];
+  const ok = confirm(`Excluir "${tx.description}" (${fmt(tx.amount)})?\n\nVai pra lixeira — dá pra restaurar depois se precisar.`);
+  if(!ok) return;
+
+  state.transactions.splice(idx, 1);
   tx.deletedBy = currentUser.username;
   tx.deletedAt = todayStr();
   state.deletedTransactions.push(tx);
+  undoStack.push({type:'soft-delete', txId: tx.id});
   logEvent(`excluiu (moveu pra lixeira): ${tx.description} (${fmt(tx.amount)})`, 'trash');
   await saveState();
   renderAll();
@@ -1075,6 +1255,7 @@ async function restoreTx(txId){
   delete tx.deletedBy;
   delete tx.deletedAt;
   state.transactions.push(tx);
+  undoStack.push({type:'restore', txId: tx.id});
   logEvent(`restaurou da lixeira: ${tx.description} (${fmt(tx.amount)})`, 'trash');
   await saveState();
   renderAll();
@@ -1270,6 +1451,8 @@ function renderBalance(){
   document.getElementById('totalExpense').textContent = fmt(expense);
 }
 
+let historyTypeFilter = 'all';
+
 function getFilteredTx(){
   const from = document.getElementById('filterFrom').value;
   const to = document.getElementById('filterTo').value;
@@ -1277,6 +1460,7 @@ function getFilteredTx(){
   const text = document.getElementById('filterText').value.trim().toLowerCase();
 
   return state.transactions.filter(t=>{
+    if(historyTypeFilter !== 'all' && t.type !== historyTypeFilter) return false;
     if(from && t.date < from) return false;
     if(to && t.date > to) return false;
     if(cat && t.category !== cat) return false;
@@ -1284,6 +1468,14 @@ function getFilteredTx(){
     return true;
   }).sort((a,b)=> b.date.localeCompare(a.date) || (b.id > a.id ? 1 : -1));
 }
+
+document.querySelectorAll('#typeFilters button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    historyTypeFilter = btn.dataset.typeFilter;
+    document.querySelectorAll('#typeFilters button').forEach(b => b.classList.toggle('active', b===btn));
+    renderHistory();
+  });
+});
 
 function formatDateLabel(dateStr){
   const [y,m,d] = dateStr.split('-');
@@ -1352,9 +1544,12 @@ function renderMonthly(){
   const monthMap = {};
   state.transactions.forEach(t=>{
     const key = t.date.slice(0,7); // YYYY-MM
-    if(!monthMap[key]) monthMap[key] = {income:0, expense:0};
+    if(!monthMap[key]) monthMap[key] = {income:0, expense:0, categories:{}};
     if(t.type==='income') monthMap[key].income += t.amount;
-    else monthMap[key].expense += t.amount;
+    else{
+      monthMap[key].expense += t.amount;
+      monthMap[key].categories[t.category] = (monthMap[key].categories[t.category] || 0) + t.amount;
+    }
   });
 
   const container = document.getElementById('monthList');
@@ -1371,11 +1566,20 @@ function renderMonthly(){
   keys.forEach(key=>{
     const [y,m] = key.split('-');
     const label = `${monthNames[Number(m)-1]} de ${y}`;
-    const {income, expense} = monthMap[key];
+    const {income, expense, categories} = monthMap[key];
     const net = income - expense;
     const total = income + expense;
     const incomePct = total > 0 ? (income/total*100) : 0;
     const expensePct = total > 0 ? (expense/total*100) : 0;
+
+    const catEntries = Object.entries(categories).sort((a,b)=> b[1]-a[1]);
+    const catRowsHtml = catEntries.map(([cat,val])=>{
+      const pct = expense > 0 ? (val/expense*100) : 0;
+      return `<div class="month-cat-row">
+        <span class="month-cat-name">${escapeHtml(cat)}</span>
+        <span class="month-cat-val">${fmt(val)} <span class="month-cat-pct">(${pct.toFixed(0)}%)</span></span>
+      </div>`;
+    }).join('');
 
     html += `
       <div class="month-card">
@@ -1391,6 +1595,11 @@ function renderMonthly(){
           <span class="in">+ ${fmt(income)} receita</span>
           <span class="out">− ${fmt(expense)} gasto</span>
         </div>
+        ${catEntries.length > 0 ? `
+        <details class="month-cats">
+          <summary>Gastos por categoria nesse mês</summary>
+          <div class="month-cats-list">${catRowsHtml}</div>
+        </details>` : ''}
       </div>`;
   });
   container.innerHTML = html;
@@ -1429,6 +1638,7 @@ function renderAll(){
   renderPending();
   renderDeletedHistory();
   renderActivity();
+  renderBackupHint();
 }
 
 ['filterFrom','filterTo','filterCategory','filterText'].forEach(id=>{
@@ -1441,6 +1651,8 @@ document.getElementById('clearFilters').addEventListener('click', ()=>{
   document.getElementById('filterTo').value = "";
   document.getElementById('filterCategory').value = "";
   document.getElementById('filterText').value = "";
+  historyTypeFilter = 'all';
+  document.querySelectorAll('#typeFilters button').forEach(b => b.classList.toggle('active', b.dataset.typeFilter==='all'));
   renderHistory();
 });
 
