@@ -98,6 +98,12 @@
     border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-weight:500;
   }
   .init-balance button:hover{border-color:var(--accent);}
+  .init-hint{font-size:10.5px;color:var(--muted);margin:6px 0 0;max-width:220px;line-height:1.4;}
+  .quick-add-btn{
+    margin-top:14px;background:var(--income-soft);border:1px solid var(--income);color:var(--income);
+    border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer;
+  }
+  .quick-add-btn:hover{filter:brightness(1.1);}
 
   /* ---------- form ---------- */
   .panel{
@@ -171,6 +177,11 @@
     padding:2px 6px;border-radius:6px;line-height:1;
   }
   .tx-del:hover{color:var(--danger);background:#ff5c5c15;}
+  .tx-edit{
+    background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;
+    padding:2px 6px;border-radius:6px;line-height:1;
+  }
+  .tx-edit:hover{color:var(--accent);background:var(--accent-soft);}
   .tx-del:disabled{opacity:.35;cursor:not-allowed;}
   .tx-del:disabled:hover{color:var(--muted);background:none;}
   .tx-lock-note{
@@ -211,9 +222,30 @@
     font-size:12.5px;align-items:baseline;
   }
   .activity-row:last-child{border-bottom:none;}
+  .activity-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;align-self:center;}
+  .activity-dot.income{background:var(--income);}
+  .activity-dot.expense{background:var(--accent);}
+  .activity-dot.trash{background:var(--danger);}
+  .activity-dot.system{background:var(--muted);}
   .activity-who{font-weight:600;color:var(--accent);flex-shrink:0;}
   .activity-text{color:var(--text);flex:1;min-width:0;}
   .activity-when{color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:10.5px;white-space:nowrap;flex-shrink:0;}
+  .activity-filters{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+  .activity-filters button{
+    font-size:11px;font-weight:600;padding:5px 10px;border-radius:20px;cursor:pointer;
+    border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
+  }
+  .activity-filters button.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+
+  /* ---------- category chart ---------- */
+  .category-chart{display:flex;flex-direction:column;gap:12px;}
+  .category-row .cat-head{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;}
+  .category-row .cat-name{color:var(--text);font-weight:500;}
+  .category-row .cat-val{font-family:'JetBrains Mono',monospace;color:var(--accent);}
+  .category-row .cat-track{height:8px;border-radius:5px;background:var(--line-soft);overflow:hidden;}
+  .category-row .cat-fill{height:100%;background:var(--accent);border-radius:5px;}
+
+  .section-title #exportCsvBtn{font-weight:500;margin-bottom:0;}
 
   /* ---------- monthly ---------- */
   .month-list{display:flex;flex-direction:column;gap:10px;}
@@ -281,6 +313,11 @@
     border-radius:8px;padding:10px 11px;font-size:14px;font-family:'Inter',sans-serif;
   }
   .login-field input:focus{outline:none;border-color:var(--accent);}
+  .remember-row{
+    display:flex;align-items:center;gap:8px;margin:2px 0 16px;position:relative;
+    font-size:12px;color:var(--muted);cursor:pointer;
+  }
+  .remember-row input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;}
   .login-btn{
     width:100%;padding:11px;border-radius:9px;border:none;margin-top:6px;
     background:var(--accent);color:#1a1c22;font-weight:700;font-size:13px;cursor:pointer;
@@ -338,6 +375,10 @@
       <label>Senha</label>
       <input type="password" id="loginPass" autocomplete="current-password" placeholder="Senha">
     </div>
+    <label class="remember-row">
+      <input type="checkbox" id="rememberMe">
+      <span>Lembrar meus dados neste computador</span>
+    </label>
     <button class="login-btn" id="loginBtn">Entrar</button>
     <div class="login-error" id="loginError"></div>
   </div>
@@ -366,6 +407,58 @@
     </div>
   </div>
 </div>
+
+<div class="modal-overlay" id="resetOtherModal">
+  <div class="modal-card">
+    <h2>Redefinir senha de <span id="resetOtherName">—</span></h2>
+    <p class="sub" style="margin:-4px 0 16px;">Use isso se a outra pessoa esqueceu a senha. Não precisa saber a senha antiga.</p>
+    <div class="field">
+      <label>Nova senha</label>
+      <input type="password" id="roNew1" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>Confirmar nova senha</label>
+      <input type="password" id="roNew2" autocomplete="new-password">
+    </div>
+    <div class="modal-error" id="roError"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="roCancel">Cancelar</button>
+      <button class="confirm" id="roConfirm">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="editTxModal">
+  <div class="modal-card" style="max-width:380px;">
+    <h2>Editar lançamento</h2>
+    <div class="toggle-type">
+      <button data-type="expense" id="editBtnExpense">− Gasto</button>
+      <button data-type="income" id="editBtnIncome">+ Receita</button>
+    </div>
+    <div class="field">
+      <label>Descrição</label>
+      <input type="text" id="editDesc">
+    </div>
+    <div class="field">
+      <label>Valor (R$)</label>
+      <input type="number" id="editAmount" step="0.01" min="0">
+    </div>
+    <div class="field">
+      <label>Data</label>
+      <input type="date" id="editDate">
+    </div>
+    <div class="field">
+      <label>Categoria</label>
+      <select id="editCategory"></select>
+    </div>
+    <div class="modal-error" id="editError"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="editCancel">Cancelar</button>
+      <button class="confirm" id="editConfirm">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="wrap">
 
   <div class="header">
@@ -377,6 +470,7 @@
     <div class="user-box">
       <span id="userBadge">—</span>
       <button id="changePassBtn" class="clear">Trocar senha</button>
+      <button id="resetOtherBtn" class="clear">Redefinir senha do outro</button>
       <button id="logoutBtn" class="clear">Sair</button>
     </div>
   </div>
@@ -393,12 +487,29 @@
           <div class="stat income"><div class="k">Receitas (total)</div><div class="v" id="totalIncome">R$ 0,00</div></div>
           <div class="stat expense"><div class="k">Gastos (total)</div><div class="v" id="totalExpense">R$ 0,00</div></div>
         </div>
+        <button class="quick-add-btn" id="quickAddIncomeBtn">+ Adicionar dinheiro ao saldo</button>
       </div>
       <div class="init-balance">
-        <label for="initInput">Saldo inicial</label>
-        <input type="number" id="initInput" step="0.01" placeholder="0,00">
-        <button id="saveInitBtn">Salvar</button>
+        <label for="initInput">Saldo inicial (só uma vez, ao começar)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="initInput" step="0.01" placeholder="0,00">
+          <button id="saveInitBtn">Salvar</button>
+        </div>
+        <p class="init-hint">Pra somar mais dinheiro depois, use o botão "Adicionar dinheiro" ao lado — não mexa aqui de novo.</p>
       </div>
+    </div>
+  </div>
+
+  <!-- BACKUP -->
+  <div class="panel" style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+      <p class="section-title" style="margin:0;">Backup</p>
+      <p class="sub" style="margin:2px 0 0;">Guarde uma cópia de segurança de vez em quando.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="clear" id="downloadBackupBtn">Baixar backup (.json)</button>
+      <button class="clear" id="restoreBackupBtn">Restaurar backup</button>
+      <input type="file" id="restoreBackupInput" accept="application/json" style="display:none;">
     </div>
   </div>
 
@@ -411,7 +522,7 @@
     </div>
     <div class="form-grid">
       <div class="field full">
-        <label>Descrição</label>
+        <label id="descLabel">O que foi comprado</label>
         <input type="text" id="descInput" placeholder="Ex: Rolo de PLA preto 1kg">
       </div>
       <div class="field">
@@ -436,9 +547,22 @@
     <div class="month-list" id="monthList"></div>
   </div>
 
+  <!-- CATEGORY BREAKDOWN -->
+  <div class="panel">
+    <p class="section-title">Gastos por categoria <span class="tag">total</span></p>
+    <div id="categoryChart" class="category-chart"></div>
+  </div>
+
   <!-- ACTIVITY LOG -->
   <div class="panel">
     <p class="section-title">Atividade <span class="tag" id="activityCount">0</span></p>
+    <div class="activity-filters" id="activityFilters">
+      <button data-filter="all" class="active">Todas</button>
+      <button data-filter="income">Entradas</button>
+      <button data-filter="expense">Saídas</button>
+      <button data-filter="trash">Exclusões</button>
+      <button data-filter="system">Conta</button>
+    </div>
     <div id="activityList" class="activity-list"></div>
   </div>
 
@@ -457,7 +581,9 @@
 
   <!-- HISTORY -->
   <div class="panel">
-    <p class="section-title">Histórico <span class="tag" id="historyCount">0 lançamentos</span></p>
+    <p class="section-title">Histórico <span class="tag" id="historyCount">0 lançamentos</span>
+      <button class="clear" id="exportCsvBtn" style="margin-left:auto;">Exportar CSV</button>
+    </p>
     <div class="filters">
       <div class="field">
         <label>De</label>
@@ -491,6 +617,8 @@ const DEFAULT_USERS = [
 
 let currentUser = null;
 
+const REMEMBER_KEY = "remembered-login-3d";
+
 async function checkLogin(){
   const btn = document.getElementById('loginBtn');
   const user = document.getElementById('loginUser').value.trim();
@@ -508,6 +636,16 @@ async function checkLogin(){
     document.getElementById('appRoot').style.display = 'block';
     document.getElementById('userBadge').textContent = match.display;
     document.getElementById('loginPass').value = "";
+
+    const remember = document.getElementById('rememberMe').checked;
+    try{
+      if(remember){
+        await window.storage.set(REMEMBER_KEY, JSON.stringify({username: user, password: pass}), false);
+      }else{
+        await window.storage.delete(REMEMBER_KEY, false);
+      }
+    }catch(e){ /* sem espaço pessoal disponível, tudo bem, segue sem lembrar */ }
+
     renderAll();
   }else{
     errEl.textContent = "Login ou senha incorretos.";
@@ -516,6 +654,24 @@ async function checkLogin(){
 document.getElementById('loginBtn').addEventListener('click', checkLogin);
 document.getElementById('loginPass').addEventListener('keydown', (e)=>{ if(e.key==='Enter') checkLogin(); });
 document.getElementById('loginUser').addEventListener('keydown', (e)=>{ if(e.key==='Enter') checkLogin(); });
+
+// Preenche (e tenta logar sozinho) se já tiver dados lembrados neste dispositivo/conta.
+async function tryAutoLogin(){
+  try{
+    const res = await window.storage.get(REMEMBER_KEY, false);
+    if(res && res.value){
+      const data = JSON.parse(res.value);
+      if(data.username && data.password){
+        document.getElementById('loginUser').value = data.username;
+        document.getElementById('loginPass').value = data.password;
+        document.getElementById('rememberMe').checked = true;
+        await checkLogin();
+      }
+    }
+  }catch(e){ /* nada lembrado ainda */ }
+}
+tryAutoLogin();
+
 
 document.getElementById('logoutBtn').addEventListener('click', ()=>{
   currentUser = null;
@@ -552,13 +708,43 @@ document.getElementById('cpConfirm').addEventListener('click', async ()=>{
   const u = state.users.find(u => u.username === currentUser.username);
   u.password = new1;
   currentUser = u;
-  logEvent(`trocou a própria senha`);
+  logEvent(`trocou a própria senha`, 'system');
   await saveState();
   closeChangePass();
 });
 
+function openResetOther(){
+  const other = state.users.find(u => u.username !== currentUser.username);
+  document.getElementById('resetOtherName').textContent = other ? other.display : '—';
+  document.getElementById('roNew1').value = "";
+  document.getElementById('roNew2').value = "";
+  document.getElementById('roError').textContent = "";
+  document.getElementById('resetOtherModal').classList.add('open');
+}
+function closeResetOther(){
+  document.getElementById('resetOtherModal').classList.remove('open');
+}
+document.getElementById('resetOtherBtn').addEventListener('click', openResetOther);
+document.getElementById('roCancel').addEventListener('click', closeResetOther);
+
+document.getElementById('roConfirm').addEventListener('click', async ()=>{
+  const new1 = document.getElementById('roNew1').value;
+  const new2 = document.getElementById('roNew2').value;
+  const errEl = document.getElementById('roError');
+
+  if(!new1 || new1.length < 4){ errEl.textContent = "A nova senha deve ter ao menos 4 caracteres."; return; }
+  if(new1 !== new2){ errEl.textContent = "As senhas não coincidem."; return; }
+
+  const other = state.users.find(u => u.username !== currentUser.username);
+  if(!other){ errEl.textContent = "Não foi possível encontrar a outra conta."; return; }
+  other.password = new1;
+  logEvent(`redefiniu a senha de ${other.display}`, 'system');
+  await saveState();
+  closeResetOther();
+});
+
 const EXPENSE_CATEGORIES = ["Filamento","Impressora 3D","Peças/Manutenção","Energia","Embalagem","Ferramentas","Outros"];
-const INCOME_CATEGORIES = ["Venda de peça","Serviço de impressão","Outros"];
+const INCOME_CATEGORIES = ["Aporte / dinheiro próprio","Venda de peça","Serviço de impressão","Outros"];
 
 let state = { initialBalance: 0, transactions: [], users: JSON.parse(JSON.stringify(DEFAULT_USERS)), deletionRequests: [], deletedTransactions: [], activityLog: [] };
 let currentType = "expense";
@@ -615,10 +801,11 @@ async function saveState(){
 }
 
 // Registra uma ação no log de atividade, com quem fez e quando.
-function logEvent(text){
+function logEvent(text, kind){
   state.activityLog.unshift({
     id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
     text: text,
+    kind: kind || 'system',
     by: currentUser.username,
     at: new Date().toISOString()
   });
@@ -648,18 +835,35 @@ function setType(type){
   document.getElementById('btnExpense').classList.toggle('active', type==='expense');
   document.getElementById('btnIncome').classList.toggle('active', type==='income');
   const addBtn = document.getElementById('addBtn');
-  addBtn.textContent = type === 'expense' ? '− Gasto' === undefined ? '' : 'Adicionar gasto' : 'Adicionar receita';
+  addBtn.textContent = type === 'expense' ? 'Adicionar gasto' : 'Adicionar receita';
   addBtn.classList.toggle('income', type==='income');
+
+  const descLabel = document.getElementById('descLabel');
+  const descInput = document.getElementById('descInput');
+  if(type === 'income'){
+    descLabel.textContent = 'De onde veio esse dinheiro';
+    descInput.placeholder = 'Ex: Venda de peça pro cliente João';
+  }else{
+    descLabel.textContent = 'O que foi comprado';
+    descInput.placeholder = 'Ex: Rolo de PLA preto 1kg';
+  }
+
   populateCategorySelect();
 }
 
 document.getElementById('btnExpense').addEventListener('click', ()=>setType('expense'));
 document.getElementById('btnIncome').addEventListener('click', ()=>setType('income'));
 
+document.getElementById('quickAddIncomeBtn').addEventListener('click', ()=>{
+  setType('income');
+  document.getElementById('amountInput').focus();
+  document.getElementById('amountInput').scrollIntoView({behavior:'smooth', block:'center'});
+});
+
 document.getElementById('saveInitBtn').addEventListener('click', async ()=>{
   const val = parseFloat(document.getElementById('initInput').value) || 0;
   state.initialBalance = val;
-  logEvent(`definiu o saldo inicial em ${fmt(val)}`);
+  logEvent(`definiu o saldo inicial em ${fmt(val)}`, 'system');
   await saveState();
   renderAll();
 });
@@ -683,7 +887,7 @@ document.getElementById('addBtn').addEventListener('click', async ()=>{
     createdBy: currentUser.username
   };
   state.transactions.push(tx);
-  logEvent(`${currentType==='expense'?'registrou um gasto':'registrou uma receita'}: ${desc} (${fmt(amount)})`);
+  logEvent(`${currentType==='expense'?'registrou um gasto':'registrou uma receita'}: ${desc} (${fmt(amount)})`, currentType);
   await saveState();
 
   document.getElementById('descInput').value = "";
@@ -691,6 +895,153 @@ document.getElementById('addBtn').addEventListener('click', async ()=>{
   document.getElementById('dateInput').value = "";
 
   renderAll();
+});
+
+// ---------- Editar lançamento ----------
+let editingTxId = null;
+let editingType = "expense";
+
+function populateEditCategorySelect(){
+  const sel = document.getElementById('editCategory');
+  const list = editingType === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+  const cur = sel.value;
+  sel.innerHTML = list.map(c => `<option value="${c}">${c}</option>`).join("");
+  if(list.includes(cur)) sel.value = cur;
+}
+function setEditType(type){
+  editingType = type;
+  document.getElementById('editBtnExpense').classList.toggle('active', type==='expense');
+  document.getElementById('editBtnIncome').classList.toggle('active', type==='income');
+  populateEditCategorySelect();
+}
+document.getElementById('editBtnExpense').addEventListener('click', ()=>setEditType('expense'));
+document.getElementById('editBtnIncome').addEventListener('click', ()=>setEditType('income'));
+
+function openEditModal(txId){
+  const tx = state.transactions.find(t => t.id === txId);
+  if(!tx) return;
+  editingTxId = txId;
+  setEditType(tx.type);
+  document.getElementById('editDesc').value = tx.description;
+  document.getElementById('editAmount').value = tx.amount;
+  document.getElementById('editDate').value = tx.date;
+  document.getElementById('editCategory').value = tx.category;
+  document.getElementById('editError').textContent = "";
+  document.getElementById('editTxModal').classList.add('open');
+}
+function closeEditModal(){
+  document.getElementById('editTxModal').classList.remove('open');
+  editingTxId = null;
+}
+document.getElementById('editCancel').addEventListener('click', closeEditModal);
+
+document.getElementById('editConfirm').addEventListener('click', async ()=>{
+  const errEl = document.getElementById('editError');
+  const tx = state.transactions.find(t => t.id === editingTxId);
+  if(!tx){ errEl.textContent = "Lançamento não encontrado."; return; }
+
+  const desc = document.getElementById('editDesc').value.trim();
+  const amount = parseFloat(document.getElementById('editAmount').value);
+  const date = document.getElementById('editDate').value;
+  const category = document.getElementById('editCategory').value;
+
+  if(!desc){ errEl.textContent = "Adicione uma descrição."; return; }
+  if(!amount || amount <= 0){ errEl.textContent = "Informe um valor válido."; return; }
+  if(!date){ errEl.textContent = "Informe uma data."; return; }
+
+  const before = `${tx.type==='expense'?'gasto':'receita'} "${tx.description}" (${fmt(tx.amount)}, ${formatDateLabel(tx.date)})`;
+  tx.type = editingType;
+  tx.description = desc;
+  tx.amount = amount;
+  tx.date = date;
+  tx.category = category;
+  const after = `${tx.type==='expense'?'gasto':'receita'} "${tx.description}" (${fmt(tx.amount)}, ${formatDateLabel(tx.date)})`;
+
+  logEvent(`editou um lançamento: ${before} → ${after}`, tx.type);
+  await saveState();
+  closeEditModal();
+  renderAll();
+});
+
+// ---------- Exportar CSV ----------
+function exportCSV(){
+  const rows = [["Data","Tipo","Categoria","Descrição","Valor","Adicionado por"]];
+  state.transactions
+    .slice()
+    .sort((a,b)=> a.date.localeCompare(b.date))
+    .forEach(t=>{
+      rows.push([
+        t.date,
+        t.type === 'expense' ? 'Gasto' : 'Receita',
+        t.category,
+        t.description,
+        t.amount.toFixed(2).replace('.', ','),
+        userDisplay(t.createdBy || '')
+      ]);
+    });
+
+  const csv = rows.map(r => r.map(cell => {
+    const s = String(cell ?? '');
+    return /[;"\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(';')).join('\n');
+
+  const blob = new Blob(["\uFEFF" + csv], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `controle-financeiro-3d_${todayStr()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+
+// ---------- Backup completo (JSON) ----------
+function downloadBackup(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `controle-financeiro-3d-backup_${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+document.getElementById('downloadBackupBtn').addEventListener('click', downloadBackup);
+
+document.getElementById('restoreBackupBtn').addEventListener('click', ()=>{
+  document.getElementById('restoreBackupInput').click();
+});
+document.getElementById('restoreBackupInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if(!parsed || !Array.isArray(parsed.transactions)){
+      alert("Esse arquivo não parece ser um backup válido.");
+      return;
+    }
+    const ok = confirm("Isso vai substituir TODOS os dados atuais pelos do backup. Quer continuar?");
+    if(!ok) return;
+
+    state = parsed;
+    if(!state.deletionRequests) state.deletionRequests = [];
+    if(!state.deletedTransactions) state.deletedTransactions = [];
+    if(!state.activityLog) state.activityLog = [];
+    if(!state.users || !state.users.length) state.users = JSON.parse(JSON.stringify(DEFAULT_USERS));
+
+    logEvent(`restaurou os dados a partir de um arquivo de backup`, 'system');
+    await saveState();
+    document.getElementById('initInput').value = state.initialBalance || "";
+    renderAll();
+    alert("Backup restaurado com sucesso.");
+  }catch(err){
+    alert("Não foi possível ler esse arquivo de backup.");
+  }
+  e.target.value = "";
 });
 
 function userDisplay(username){
@@ -711,7 +1062,7 @@ async function softDelete(txId){
   tx.deletedBy = currentUser.username;
   tx.deletedAt = todayStr();
   state.deletedTransactions.push(tx);
-  logEvent(`excluiu (moveu pra lixeira): ${tx.description} (${fmt(tx.amount)})`);
+  logEvent(`excluiu (moveu pra lixeira): ${tx.description} (${fmt(tx.amount)})`, 'trash');
   await saveState();
   renderAll();
 }
@@ -724,7 +1075,7 @@ async function restoreTx(txId){
   delete tx.deletedBy;
   delete tx.deletedAt;
   state.transactions.push(tx);
-  logEvent(`restaurou da lixeira: ${tx.description} (${fmt(tx.amount)})`);
+  logEvent(`restaurou da lixeira: ${tx.description} (${fmt(tx.amount)})`, 'trash');
   await saveState();
   renderAll();
 }
@@ -743,7 +1094,7 @@ async function requestPermanentErase(txId){
     requestedBy: currentUser.username,
     requestedAt: todayStr()
   });
-  if(tx) logEvent(`pediu exclusão definitiva de: ${tx.description} (${fmt(tx.amount)})`);
+  if(tx) logEvent(`pediu exclusão definitiva de: ${tx.description} (${fmt(tx.amount)})`, 'trash');
   await saveState();
   renderAll();
 }
@@ -752,7 +1103,7 @@ async function cancelErase(reqId){
   const req = state.deletionRequests.find(r => r.id === reqId);
   const tx = req ? state.deletedTransactions.find(t => t.id === req.txId) : null;
   state.deletionRequests = state.deletionRequests.filter(r => r.id !== reqId);
-  if(tx) logEvent(`recusou/cancelou o pedido de exclusão definitiva de: ${tx.description} (${fmt(tx.amount)})`);
+  if(tx) logEvent(`recusou/cancelou o pedido de exclusão definitiva de: ${tx.description} (${fmt(tx.amount)})`, 'trash');
   await saveState();
   renderAll();
 }
@@ -763,7 +1114,7 @@ async function approveErase(reqId){
   const tx = state.deletedTransactions.find(t => t.id === req.txId);
   state.deletedTransactions = state.deletedTransactions.filter(t => t.id !== req.txId);
   state.deletionRequests = state.deletionRequests.filter(r => r.id !== reqId);
-  if(tx) logEvent(`confirmou exclusão definitiva de: ${tx.description} (${fmt(tx.amount)})`);
+  if(tx) logEvent(`confirmou exclusão definitiva de: ${tx.description} (${fmt(tx.amount)})`, 'trash');
   await saveState();
   renderAll();
 }
@@ -814,24 +1165,37 @@ function renderPending(){
   });
 }
 
+let activityFilter = 'all';
+
 function renderActivity(){
   const list = document.getElementById('activityList');
   const count = document.getElementById('activityCount');
   const log = state.activityLog || [];
   count.textContent = log.length;
 
-  if(log.length === 0){
-    list.innerHTML = `<div class="empty">Nenhuma atividade registrada ainda.</div>`;
+  const filtered = activityFilter === 'all' ? log : log.filter(ev => ev.kind === activityFilter);
+
+  if(filtered.length === 0){
+    list.innerHTML = `<div class="empty">Nenhuma atividade nessa categoria ainda.</div>`;
     return;
   }
 
-  list.innerHTML = log.slice(0, 60).map(ev => `
+  list.innerHTML = filtered.slice(0, 60).map(ev => `
     <div class="activity-row">
+      <span class="activity-dot ${ev.kind || 'system'}"></span>
       <span class="activity-who">${escapeHtml(userDisplay(ev.by))}</span>
       <span class="activity-text">${escapeHtml(ev.text)}</span>
       <span class="activity-when">${fmtWhen(ev.at)}</span>
     </div>`).join('');
 }
+
+document.querySelectorAll('#activityFilters button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    activityFilter = btn.dataset.filter;
+    document.querySelectorAll('#activityFilters button').forEach(b => b.classList.toggle('active', b===btn));
+    renderActivity();
+  });
+});
 
 function renderDeletedHistory(){
   const wrap = document.getElementById('deletedPanelWrap');
@@ -948,7 +1312,7 @@ function renderHistory(){
     html += `<div class="day-group"><div class="day-label">${formatDateLabel(date)}</div>`;
     groups[date].forEach(t=>{
       const actionHtml = currentUser
-        ? `<button class="tx-del" data-id="${t.id}" title="Excluir (vai para a lixeira)">✕</button>`
+        ? `<button class="tx-edit" data-edit="${t.id}" title="Editar">✎</button><button class="tx-del" data-id="${t.id}" title="Excluir (vai para a lixeira)">✕</button>`
         : "";
 
       html += `
@@ -972,6 +1336,9 @@ function renderHistory(){
 
   container.querySelectorAll('.tx-del').forEach(btn=>{
     btn.addEventListener('click', ()=> softDelete(btn.dataset.id));
+  });
+  container.querySelectorAll('.tx-edit').forEach(btn=>{
+    btn.addEventListener('click', ()=> openEditModal(btn.dataset.edit));
   });
 }
 
@@ -1029,11 +1396,36 @@ function renderMonthly(){
   container.innerHTML = html;
 }
 
+function renderCategoryChart(){
+  const container = document.getElementById('categoryChart');
+  const totals = {};
+  state.transactions.forEach(t=>{
+    if(t.type !== 'expense') return;
+    totals[t.category] = (totals[t.category] || 0) + t.amount;
+  });
+
+  const entries = Object.entries(totals).sort((a,b)=> b[1]-a[1]);
+  if(entries.length === 0){
+    container.innerHTML = `<div class="empty">Nenhum gasto registrado ainda.</div>`;
+    return;
+  }
+  const max = entries[0][1];
+
+  container.innerHTML = entries.map(([cat, val])=>{
+    const pct = max > 0 ? (val/max*100) : 0;
+    return `
+      <div class="category-row">
+        <div class="cat-head"><span class="cat-name">${escapeHtml(cat)}</span><span class="cat-val">${fmt(val)}</span></div>
+        <div class="cat-track"><div class="cat-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }).join('');
+}
 function renderAll(){
   renderBalance();
   populateFilterCategory();
   renderHistory();
   renderMonthly();
+  renderCategoryChart();
   renderPending();
   renderDeletedHistory();
   renderActivity();
